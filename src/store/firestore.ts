@@ -37,11 +37,22 @@ export function readStoreConfig(env: Record<string, string | undefined>): StoreC
   return { projectId, databaseId };
 }
 
-/** The ballots collection of the configured database. */
+/**
+ * The configured database: ballots in the `ballots` collection, and the voting switch in the
+ * `settings/voting` document (absent means closed).
+ */
 export function openFirestoreStore(config: StoreConfig): BallotStore {
   const db = new Firestore({ projectId: config.projectId, databaseId: config.databaseId });
   const ballots = db.collection('ballots');
+  const voting = db.collection('settings').doc('voting');
   return {
+    async votingOpen() {
+      const snapshot = await voting.get();
+      return snapshot.get('open') === true;
+    },
+    async setVotingOpen(open: boolean) {
+      await voting.set({ open, changedAt: FieldValue.serverTimestamp() });
+    },
     async add(votes: Votes) {
       await ballots.add({ votes, castAt: FieldValue.serverTimestamp() });
     },

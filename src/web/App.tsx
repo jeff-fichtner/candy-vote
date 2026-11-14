@@ -1,28 +1,52 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Votes } from '../shared/ballot';
+import { fetchIsOwner } from './api';
+import { claimKeyFromLocation, forgetKey, hasKey } from './owner';
 import { PickScreen } from './PickScreen';
 import { StandingsScreen } from './StandingsScreen';
 import { ThanksScreen } from './ThanksScreen';
 import { VersionChip } from './VersionChip';
 
-type Screen = 'pick' | 'thanks' | 'standings';
+type Screen = 'standings' | 'pick' | 'thanks';
 
 /**
- * King Size Showdown: kids give their 3 votes to the candies they like best, one kid after
- * another on the same device, and anyone can open the standings.
+ * King Size Showdown. Everyone sees the standings. The owner's device can also start and stop
+ * voting, and while voting is open it is passed from kid to kid: each gives their 3 votes to the
+ * candies they like best.
  */
 export function App() {
-  const [screen, setScreen] = useState<Screen>('pick');
+  const [screen, setScreen] = useState<Screen>('standings');
+  const [owner, setOwner] = useState(false);
+  const [badLink, setBadLink] = useState(false);
   const [votes, setVotes] = useState<Votes>({});
 
-  const nextVoter = () => {
+  useEffect(() => {
+    const fromLink = window.location.hash.startsWith('#owner=');
+    claimKeyFromLocation();
+    if (!hasKey()) return;
+    fetchIsOwner().then(
+      (isOwner) => {
+        setOwner(isOwner);
+        if (!isOwner) {
+          forgetKey();
+          setBadLink(fromLink);
+        }
+      },
+      () => setOwner(false),
+    );
+  }, []);
+
+  const startVoter = () => {
     setVotes({});
     setScreen('pick');
   };
 
   return (
     <>
-      {screen === 'pick' && (
+      {screen === 'standings' && (
+        <StandingsScreen owner={owner} badLink={badLink} onVote={startVoter} />
+      )}
+      {screen === 'pick' && owner && (
         <PickScreen
           votes={votes}
           onChange={setVotes}
@@ -30,8 +54,7 @@ export function App() {
           onShowStandings={() => setScreen('standings')}
         />
       )}
-      {screen === 'thanks' && <ThanksScreen onNext={nextVoter} />}
-      {screen === 'standings' && <StandingsScreen onBack={() => setScreen('pick')} />}
+      {screen === 'thanks' && owner && <ThanksScreen onNext={startVoter} />}
       <VersionChip />
     </>
   );

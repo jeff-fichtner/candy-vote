@@ -1,45 +1,69 @@
 import { useEffect, useState } from 'react';
-import type { Standings } from '../shared/ballot';
-import { eraseBallots, fetchStandings } from './api';
+import { eraseBallots, fetchBoard, setVoting, type Board } from './api';
 import { Header } from './Header';
 
 /** How many candies get the big rows at the top. */
 const TOP = 5;
 
-type Load = { state: 'loading' } | { state: 'ready'; data: Standings } | { state: 'failed' };
+/** How often an open standings screen checks for new votes. */
+const REFRESH_MS = 15_000;
+
+type Load = { state: 'loading' } | { state: 'ready'; data: Board } | { state: 'failed' };
 
 function votesText(n: number): string {
   return n === 1 ? '1 vote' : `${n} votes`;
 }
 
-/** The standings: every candy's vote total, the top five large, and "Erase all votes". */
-export function StandingsScreen({ onBack }: { onBack: () => void }) {
+function kidsText(n: number): string {
+  return n === 1 ? '1 kid' : `${n} kids`;
+}
+
+interface Props {
+  /** The owner's device: it can start and stop voting, take votes and erase them. */
+  owner: boolean;
+  /** This device was opened with a setup link the server refused. */
+  badLink: boolean;
+  /** Hands the device to the next kid. */
+  onVote: () => void;
+}
+
+/**
+ * The standings, which everyone sees: every candy's vote total, the top five large. On the owner's
+ * device it also starts and stops voting and erases the votes.
+ */
+export function StandingsScreen({ owner, badLink, onVote }: Props) {
   const [load, setLoad] = useState<Load>({ state: 'loading' });
   const [confirming, setConfirming] = useState(false);
-  const [erasing, setErasing] = useState(false);
-  const [eraseError, setEraseError] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  const refresh = () => {
-    setLoad({ state: 'loading' });
-    fetchStandings().then(
+  const refresh = (quiet = false) => {
+    if (!quiet) setLoad({ state: 'loading' });
+    fetchBoard().then(
       (data) => setLoad({ state: 'ready', data }),
-      () => setLoad({ state: 'failed' }),
+      () => {
+        if (!quiet) setLoad({ state: 'failed' });
+      },
     );
   };
 
-  useEffect(refresh, []);
+  useEffect(() => {
+    refresh();
+    const timer = window.setInterval(() => refresh(true), REFRESH_MS);
+    return () => window.clearInterval(timer);
+  }, []);
 
-  const erase = async () => {
-    setErasing(true);
-    setEraseError(false);
+  const act = async (action: () => Promise<void>, failure: string, after?: () => void) => {
+    setBusy(true);
+    setActionError(null);
     try {
-      await eraseBallots();
-      setConfirming(false);
-      refresh();
+      await action();
+      after?.();
+      refresh(true);
     } catch {
-      setEraseError(true);
+      setActionError(failure);
     } finally {
-      setErasing(false);
+      setBusy(false);
     }
   };
 
@@ -54,11 +78,16 @@ export function StandingsScreen({ onBack }: { onBack: () => void }) {
       <Header />
       <h1 className="title">The Standings</h1>
 
+      {badLink && (
+        <p className="notice" role="alert">
+          That setup link didn't work on this device.
+        </p>
+      )}
       {load.state === 'loading' && <p className="lede">Counting the votes…</p>}
       {load.state === 'failed' && (
         <div className="lede">
           <p role="alert">The standings didn't load.</p>
-          <button type="button" className="secondary" onClick={refresh}>
+          <button type="button" className="secondary" onClick={() => refresh()}>
             Try again
           </button>
         </div>
@@ -66,12 +95,13 @@ export function StandingsScreen({ onBack }: { onBack: () => void }) {
 
       {data && (
         <>
+          <p className={data.votingOpen ? 'voting-state open' : 'voting-state'}>
+            {data.votingOpen ? 'Voting is open!' : 'Voting is closed.'}
+          </p>
           <p className="lede">
             {data.voters === 0
               ? 'Nobody has voted yet.'
-              : data.voters === 1
-                ? '1 kid has voted so far'
-                : `${data.voters} kids have voted so far`}
+              : `${kidsText(data.voters)} ${data.voters === 1 ? 'has' : 'have'} voted so far`}
           </p>
           {data.voters > 0 && (
             <>
@@ -112,42 +142,78 @@ export function StandingsScreen({ onBack }: { onBack: () => void }) {
         </>
       )}
 
-      <div className="standings-buttons">
-        <button type="button" className="primary" onClick={onBack}>
-          Back to voting
-        </button>
-        {data && data.voters > 0 && !confirming && (
-          <button type="button" className="secondary" onClick={() => setConfirming(true)}>
-            Erase all votes
-          </button>
-        )}
-        {data && confirming && (
-          <div className="confirm" role="group" aria-label="Erase all votes?">
-            <p>
-              Erase all {data.voters} {data.voters === 1 ? 'vote' : 'votes'}? This can't be undone.
+      {owner && data && (
+        <div className="standings-buttons" role="group" aria-label="Owner controls">
+          {actionError && (
+            <p className="error" role="alert">
+              {actionError}
             </p>
-            {eraseError && <p role="alert">Erasing didn't work. Try again.</p>}
-            <div className="confirm-buttons">
+          )}
+          {data.votingOpen ? (
+            <>
+              <button type="button" className="primary" disabled={busy} onClick={onVote}>
+                Next voter
+              </button>
               <button
                 type="button"
                 className="secondary"
-                disabled={erasing}
-                onClick={() => setConfirming(false)}
+                disabled={busy}
+                onClick={() => void act(() => setVoting(false), "Voting didn't stop. Try again.")}
               >
-                Keep them
+                Stop voting
               </button>
-              <button
-                type="button"
-                className="danger"
-                disabled={erasing}
-                onClick={() => void erase()}
-              >
-                {erasing ? 'Erasing…' : 'Yes, erase'}
-              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="primary"
+              disabled={busy}
+              onClick={() =>
+                void act(() => setVoting(true), "Voting didn't start. Try again.", onVote)
+              }
+            >
+              Start voting
+            </button>
+          )}
+          {data.voters > 0 && !confirming && (
+            <button
+              type="button"
+              className="secondary"
+              disabled={busy}
+              onClick={() => setConfirming(true)}
+            >
+              Erase all votes
+            </button>
+          )}
+          {confirming && (
+            <div className="confirm" role="group" aria-label="Erase all votes?">
+              <p>Erase the votes of all {kidsText(data.voters)}? This can't be undone.</p>
+              <div className="confirm-buttons">
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={busy}
+                  onClick={() => setConfirming(false)}
+                >
+                  Keep them
+                </button>
+                <button
+                  type="button"
+                  className="danger"
+                  disabled={busy}
+                  onClick={() =>
+                    void act(eraseBallots, "Erasing didn't work. Try again.", () =>
+                      setConfirming(false),
+                    )
+                  }
+                >
+                  {busy ? 'Erasing…' : 'Yes, erase'}
+                </button>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </main>
   );
 }

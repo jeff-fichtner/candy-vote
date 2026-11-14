@@ -7,9 +7,17 @@ device. The standings rank every candy by its vote total, so the top few are wha
 Vite + React + TypeScript, an Express API, and Firestore for the ballots; deployed to Google
 Cloud Run. The voting screen is prerendered.
 
+Everyone who opens the site sees the standings. One device, the owner's phone, can also start and
+stop voting, take the kids' votes while voting is open, and erase the votes; the server refuses
+those from any other device. The phone becomes the owner device by opening the setup link
+`https://<host>/#owner=<OWNER_KEY>` once: the page keeps the key in that browser and removes it
+from the address bar. Opening the link in another browser makes that one an owner device too, so
+keep the link private; changing `OWNER_KEY` revokes every device that holds the old one.
+
 - `src/shared/candies.ts` is the candy list and the number of votes per kid.
 - `src/shared/ballot.ts` checks a ballot and adds up the standings (tied candies share a place).
-- API: `POST /api/ballots`, `GET /api/standings`, `DELETE /api/ballots` (`src/routes/ballots.ts`).
+- API (`src/routes/ballots.ts`): `GET /api/standings` and `GET /api/me` for anyone; `POST /api/voting`,
+  `POST /api/ballots` and `DELETE /api/ballots` for the owner device only (`src/owner.ts`).
 - The Matilda logo images in `src/web/public/` come from the show's licensed logo pack.
 
 ## Develop

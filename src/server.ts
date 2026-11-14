@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { PORT } from './config.js';
 import { BAKED } from './env.generated.js';
 import { registerRoutes } from './routes/index.js';
+import { ownerCheck, readOwnerKey, type OwnerCheck } from './owner.js';
 import type { BallotStore } from './store/store.js';
 import { assertStoreReachable, openFirestoreStore, readStoreConfig } from './store/firestore.js';
 
@@ -13,7 +14,7 @@ import { assertStoreReachable, openFirestoreStore, readStoreConfig } from './sto
 const distDir = resolve(process.cwd(), 'dist');
 
 /** Builds the Express app that serves the vote API and the built frontend from dist/. */
-export function createApp(store: BallotStore): Express {
+export function createApp(store: BallotStore, isOwner: OwnerCheck): Express {
   const app = express();
 
   // A non-public environment (e.g. staging) is publicly reachable — it serves exactly like
@@ -26,7 +27,7 @@ export function createApp(store: BallotStore): Express {
     next();
   });
 
-  registerRoutes(app, store);
+  registerRoutes(app, store, isOwner);
 
   app.use(express.static(distDir));
 
@@ -41,10 +42,11 @@ export function createApp(store: BallotStore): Express {
 
 const isMain = process.argv[1] === fileURLToPath(import.meta.url);
 if (isMain) {
+  const isOwner = ownerCheck(readOwnerKey(process.env));
   const config = readStoreConfig(process.env);
   const store = openFirestoreStore(config);
   await assertStoreReachable(store, config);
-  createApp(store).listen(PORT, () => {
+  createApp(store, isOwner).listen(PORT, () => {
     console.log(`Listening on http://localhost:${PORT}`);
   });
 }
