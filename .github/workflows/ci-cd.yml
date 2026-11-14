@@ -1,0 +1,113 @@
+# Validate and version. The pushed branch selects the environment through environments.json:
+# dev → staging, main → production.
+#
+# Wired from snackbyte-release-flow-action's CONSUMING.md ("Build once — promote staging's build",
+# on Recipe A). The release flow resolves whether a branch is an environment and derives and pushes
+# the version tag, a tag only, never a commit.
+#
+# Two gates protect a release: a PR is blocked until `check:all` passes, and `check:all` runs again
+# on the push before anything is tagged, so a tag on a tree means that tree passed. A promotion
+# (dev → main of a tree dev already released) is looked up first and skips the checks.
+#
+# The gate needs the Firestore emulator (the ballot store's tests run against it, never a fake), so
+# each gate installs Java 21 and the gcloud emulator component first.
+#
+# Every job bills at least a minute, so there are as few as can be: one on a pull request, one on a
+# release push.
+#
+# Every `uses:` is pinned to a full commit SHA with its release in a comment; Dependabot moves them.
+name: ci-cd
+
+on:
+  pull_request:
+  push:
+    branches: [main, dev] # the environment branches; a work branch runs only on its pull request
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '26' # Node major for the gate (keep aligned with .nvmrc)
+
+jobs:
+  # Merge gate: PRs must pass the quality gate, and the image must build.
+  validate:
+    name: validate (merge gate)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ci-${{ github.ref }}
+      cancel-in-progress: true # a new push to the PR replaces the run in flight
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+        with:
+          install_components: cloud-firestore-emulator
+      - run: npm ci
+      - run: npm run check:all
+      # The image builds (nothing is pushed from a pull request).
+      - run: docker build -t candy-vote:check .
+
+  # Look up the push, run the push-side gate on new code, then derive and push the version tag.
+  version-and-tag:
+    name: version and tag
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    # Serialize per RELEASABLE, not per branch: the build id is global across every environment
+    # branch, so a per-branch group lets main and dev race to the same number. It also keeps the
+    # look-up and the tag in step.
+    concurrency:
+      group: release
+      cancel-in-progress: false
+      queue: max # let runs wait their turn; without it a queued release can be thrown away
+    permissions:
+      contents: write # to push the TAG only (never a commit to the branch)
+    outputs:
+      is-env: ${{ steps.release.outputs.is-env }}
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+      released-as: ${{ steps.lookup.outputs.released-as }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # full history + tags — the Action's derivation refuses a shallow clone
+      # Derive and report, creating nothing: released-as names the tag this exact tree was already
+      # released as (a promotion), or is empty for new code.
+      - name: Look up the push
+        id: lookup
+        uses: jeff-fichtner/snackbyte-release-flow-action@01d5fa53356ad4b04b2388a43eda867cc947b670 # v1.2.7
+        with:
+          mode: lookup
+      # The push-side gate, on new code only: a promoted tree passed it when it was first tagged.
+      - if: steps.lookup.outputs.released-as == ''
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - if: steps.lookup.outputs.released-as == ''
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - if: steps.lookup.outputs.released-as == ''
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+        with:
+          install_components: cloud-firestore-emulator
+      - if: steps.lookup.outputs.released-as == ''
+        run: npm ci
+      # Mandatory: on failure the job stops here, the tag step never runs, and no tag is created.
+      - if: steps.lookup.outputs.released-as == ''
+        run: npm run check:all
+      - name: Resolve environment and derive version tag
+        id: release
+        uses: jeff-fichtner/snackbyte-release-flow-action@01d5fa53356ad4b04b2388a43eda867cc947b670 # v1.2.7
+        with:
+          expect-tag: ${{ steps.lookup.outputs.tag }} # refuse any tag the look-up did not report
