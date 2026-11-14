@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Candy Shop · Picking favorites</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font-family:inherit;cursor:pointer}
+a{color:#C2185B}a:hover{color:#8E0F42}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #FFF6E9; color: #3B1F2B; font-family: 'Fredoka', system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+  <header style="padding: 22px 16px 10px; display: flex; flex-direction: column; gap: 8px; text-align: center">
+    <div style="font-size: 15px; font-weight: 600; letter-spacing: 2px; color: #7A4A5C">PLAYHOUSE 395 PRESENTS</div>
+    <h1 style="margin: 0; font-size: 40px; font-weight: 700; line-height: 1; color: #3B1F2B">King Size<br><span style="color: #C2185B">Showdown</span></h1>
+    <p style="margin: 4px 0 0; font-size: 17px; font-weight: 500; line-height: 1.35">Tap your <b style="font-weight: 700; color: #C2185B">very favorite</b> first, then your next favorite. Pick as many as you like!</p>
+  </header>
+
+  <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 10px 16px 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-content: start">
+    <sc-for list="{{candies}}" as="c" hint-placeholder-count="13">
+      <sc-if value="{{c.picked}}" hint-placeholder-val="{{ false }}">
+        <button type="button" onClick="{{c.pick}}" aria-label="{{c.aria}}" style="position: relative; height: 52px; border-radius: 6px; border: 0; background: {{c.bg}}; color: {{c.fg}}; font-size: 16px; font-weight: 700; padding: 0 16px; transform: translateY(-3px) rotate(-1.5deg); box-shadow: 0 6px 0 #3B1F2B">
+          <span aria-hidden="true" style="position: absolute; left: 0; top: 0; bottom: 0; width: 7px; background: repeating-linear-gradient(180deg, rgba(255,255,255,0.45) 0px, rgba(255,255,255,0.45) 3px, transparent 3px, transparent 6px)"></span>
+          {{c.name}}
+          <span aria-hidden="true" style="position: absolute; right: 0; top: 0; bottom: 0; width: 7px; background: repeating-linear-gradient(180deg, rgba(255,255,255,0.45) 0px, rgba(255,255,255,0.45) 3px, transparent 3px, transparent 6px)"></span>
+          <span style="position: absolute; right: -8px; top: -12px; width: 32px; height: 32px; border-radius: 50%; background: #C2185B; color: #FFFFFF; font-size: 18px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 3px solid #FFF6E9">{{c.rank}}</span>
+        </button>
+      </sc-if>
+      <sc-if value="{{c.notPicked}}" hint-placeholder-val="{{ true }}">
+        <button type="button" onClick="{{c.pick}}" aria-label="{{c.aria}}" style="position: relative; height: 52px; border-radius: 6px; border: 0; background: {{c.bg}}; color: {{c.fg}}; font-size: 16px; font-weight: 700; padding: 0 16px; box-shadow: 0 3px 0 rgba(59, 31, 43, 0.25)">
+          <span aria-hidden="true" style="position: absolute; left: 0; top: 0; bottom: 0; width: 7px; background: repeating-linear-gradient(180deg, rgba(255,255,255,0.45) 0px, rgba(255,255,255,0.45) 3px, transparent 3px, transparent 6px)"></span>
+          {{c.name}}
+          <span aria-hidden="true" style="position: absolute; right: 0; top: 0; bottom: 0; width: 7px; background: repeating-linear-gradient(180deg, rgba(255,255,255,0.45) 0px, rgba(255,255,255,0.45) 3px, transparent 3px, transparent 6px)"></span>
+        </button>
+      </sc-if>
+    </sc-for>
+  </div>
+
+  <footer style="background: #FFFFFF; border-radius: 24px 24px 0 0; box-shadow: 0 -4px 16px rgba(59, 31, 43, 0.12); padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <span style="font-size: 15px; font-weight: 700">My favorites</span>
+      <a href="B-Results.dc.html" style="font-size: 15px; font-weight: 600">See who's winning</a>
+    </div>
+    <sc-if value="{{hasPicks}}" hint-placeholder-val="{{ true }}">
+      <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px">
+        <sc-for list="{{chosen}}" as="p" hint-placeholder-count="3">
+          <li style="display: flex; align-items: center; gap: 6px; background: #FDE6EF; border-radius: 999px; padding: 4px 12px 4px 4px; font-size: 15px; font-weight: 600">
+            <span style="width: 24px; height: 24px; border-radius: 50%; background: #C2185B; color: #FFFFFF; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center">{{p.n}}</span>
+            {{p.name}}
+          </li>
+        </sc-for>
+      </ol>
+    </sc-if>
+    <sc-if value="{{noPicks}}" hint-placeholder-val="{{ false }}">
+      <div style="font-size: 15px; font-weight: 500; color: #7A4A5C; padding: 4px 0">Nothing yet. Tap a candy!</div>
+    </sc-if>
+    <div style="display: flex; gap: 10px">
+      <button type="button" onClick="{{clear}}" style="height: 56px; padding: 0 18px; border-radius: 999px; border: 2px solid #E8CFD9; background: #FFFFFF; color: #3B1F2B; font-size: 17px; font-weight: 600">Start over</button>
+      <sc-if value="{{hasPicks}}" hint-placeholder-val="{{ true }}">
+        <a href="B-Thanks.dc.html" style="flex: 1; height: 56px; border-radius: 999px; background: #C2185B; color: #FFFFFF; font-size: 21px; font-weight: 700; display: flex; align-items: center; justify-content: center; text-decoration: none">I'm done!</a>
+      </sc-if>
+      <sc-if value="{{noPicks}}" hint-placeholder-val="{{ false }}">
+        <button type="button" disabled="disabled" style="flex: 1; height: 56px; border-radius: 999px; border: 0; background: #EADDE2; color: #7A6570; font-size: 21px; font-weight: 700">I'm done!</button>
+      </sc-if>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+var CANDIES = [
+  { id: 'reeses', name: "Reese's Cups", bg: '#F47B20', fg: '#3A1A0A' },
+  { id: 'snickers', name: 'Snickers', bg: '#4A2A17', fg: '#FFFFFF' },
+  { id: 'kitkat', name: 'Kit Kat', bg: '#C8102E', fg: '#FFFFFF' },
+  { id: 'twix', name: 'Twix', bg: '#D4A63A', fg: '#5A080C' },
+  { id: 'hersheys', name: "Hershey's Milk Chocolate", bg: '#3D2314', fg: '#ECECEC' },
+  { id: 'butterfinger', name: 'Butterfinger', bg: '#FFD200', fg: '#0B3D91' },
+  { id: 'musketeers', name: '3 Musketeers', bg: '#C9D3DB', fg: '#8E0B1B' },
+  { id: 'milkyway', name: 'Milky Way', bg: '#2E1B10', fg: '#9AD06B' },
+  { id: 'crunch', name: 'Crunch', bg: '#0A4DA2', fg: '#FFFFFF' },
+  { id: 'skittles', name: 'Skittles', bg: '#C8141A', fg: '#FFFFFF' },
+  { id: 'starburst', name: 'Starburst', bg: '#FBB8CF', fg: '#5E0D33' },
+  { id: 'mms', name: "Peanut M&M's", bg: '#FDC300', fg: '#4A2410' },
+  { id: 'cookies', name: "Cookies 'n' Creme", bg: '#FFFFFF', fg: '#1C2B5A' }
+];
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var picks = (this.state && this.state.picks) || ['reeses', 'skittles'];
+    var toggle = function (id) {
+      var next = picks.slice();
+      var i = next.indexOf(id);
+      if (i >= 0) { next.splice(i, 1); } else { next.push(id); }
+      self.setState({ picks: next });
+    };
+    var candies = CANDIES.map(function (c) {
+      var rank = picks.indexOf(c.id) + 1;
+      return {
+        id: c.id, name: c.name, bg: c.bg, fg: c.fg, rank: rank,
+        picked: rank > 0, notPicked: rank === 0,
+        aria: rank > 0 ? c.name + ', pick number ' + rank : c.name,
+        pick: function () { toggle(c.id); }
+      };
+    });
+    var chosen = picks.map(function (id, i) {
+      var c = CANDIES.filter(function (x) { return x.id === id; })[0];
+      return { n: i + 1, name: c.name };
+    });
+    return {
+      candies: candies, chosen: chosen,
+      hasPicks: chosen.length > 0, noPicks: chosen.length === 0,
+      clear: function () { self.setState({ picks: [] }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

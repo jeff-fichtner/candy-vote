@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Candy Shop · Vote is in</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#C2185B}a:hover{color:#8E0F42}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #FFF6E9; color: #3B1F2B; font-family: 'Fredoka', system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 0 28px; text-align: center; overflow: hidden; position: relative">
+  <div aria-hidden="true" style="position: absolute; top: 70px; left: 34px; width: 46px; height: 18px; border-radius: 4px; background: #F47B20; transform: rotate(-24deg)"></div>
+  <div aria-hidden="true" style="position: absolute; top: 120px; right: 40px; width: 38px; height: 16px; border-radius: 4px; background: #0A4DA2; transform: rotate(18deg)"></div>
+  <div aria-hidden="true" style="position: absolute; top: 210px; left: 70px; width: 14px; height: 14px; border-radius: 50%; background: #C8141A"></div>
+  <div aria-hidden="true" style="position: absolute; top: 180px; right: 96px; width: 12px; height: 12px; border-radius: 50%; background: #FDC300"></div>
+  <div aria-hidden="true" style="position: absolute; bottom: 150px; left: 40px; width: 42px; height: 16px; border-radius: 4px; background: #FBB8CF; transform: rotate(30deg)"></div>
+  <div aria-hidden="true" style="position: absolute; bottom: 190px; right: 44px; width: 44px; height: 18px; border-radius: 4px; background: #D4A63A; transform: rotate(-14deg)"></div>
+  <div aria-hidden="true" style="position: absolute; bottom: 110px; right: 120px; width: 14px; height: 14px; border-radius: 50%; background: #9AD06B"></div>
+
+  <div style="width: 112px; height: 112px; border-radius: 50%; background: #C2185B; display: flex; align-items: center; justify-content: center">
+    <svg aria-hidden="true" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+  </div>
+  <h1 style="margin: 0; font-size: 44px; font-weight: 700; line-height: 1.05">Sweet!<br><span style="color: #C2185B">Your vote is in.</span></h1>
+  <p style="margin: 0; font-size: 19px; font-weight: 500; line-height: 1.4; color: #5E3646">Pass it to the next friend so they can pick their favorites.</p>
+  <a href="B-Picking.dc.html" style="margin-top: 10px; width: 100%; height: 64px; border-radius: 999px; background: #C2185B; color: #FFFFFF; font-size: 23px; font-weight: 700; display: flex; align-items: center; justify-content: center; text-decoration: none">Next voter</a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

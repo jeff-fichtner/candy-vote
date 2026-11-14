@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Comic Pop · Picking favorites</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&amp;family=Nunito:wght@700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font-family:inherit;cursor:pointer}
+a{color:#111111}a:hover{color:#444444}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background-color: #FFE14D; background-image: radial-gradient(rgba(17, 17, 17, 0.13) 1.4px, transparent 1.6px); background-size: 10px 10px; color: #111111; font-family: 'Nunito', system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+  <header style="padding: 20px 16px 10px; display: flex; flex-direction: column; gap: 12px; align-items: center; text-align: center">
+    <div style="background: #FFFFFF; border: 3px solid #111111; box-shadow: 6px 6px 0 #111111; padding: 10px 18px 8px; transform: rotate(-2deg)">
+      <div style="font-family: 'Bangers', Impact, sans-serif; font-size: 44px; line-height: 0.95; letter-spacing: 1px">KING SIZE <span style="color: #E8252E">SHOWDOWN!</span></div>
+    </div>
+    <p style="margin: 0; background: #FFFFFF; border: 3px solid #111111; border-radius: 14px; padding: 8px 12px; font-size: 15px; font-weight: 800; line-height: 1.35">Tap your <span style="color: #E8252E; font-weight: 900">very favorite</span> first, then your next favorite. Pick as many as you like!</p>
+  </header>
+
+  <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 6px 16px 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-content: start">
+    <sc-for list="{{candies}}" as="c" hint-placeholder-count="13">
+      <sc-if value="{{c.picked}}" hint-placeholder-val="{{ false }}">
+        <button type="button" onClick="{{c.pick}}" aria-label="{{c.aria}}" style="position: relative; height: 52px; border: 3px solid #111111; border-radius: 4px; background: #3EC6F0; color: #111111; font-size: 15px; font-weight: 900; text-align: left; padding: 0 40px 0 10px; box-shadow: 2px 2px 0 #111111; transform: translate(2px, 2px)">
+          {{c.name}}
+          <span style="position: absolute; right: -10px; top: -14px; width: 44px; height: 44px; background: #E8252E; color: #FFFFFF; font-family: 'Bangers', Impact, sans-serif; font-size: 24px; display: flex; align-items: center; justify-content: center; clip-path: polygon(50% 0%, 61% 18%, 82% 10%, 79% 32%, 100% 40%, 84% 55%, 96% 75%, 74% 76%, 68% 98%, 50% 84%, 32% 98%, 26% 76%, 4% 75%, 16% 55%, 0% 40%, 21% 32%, 18% 10%, 39% 18%)">{{c.rank}}</span>
+        </button>
+      </sc-if>
+      <sc-if value="{{c.notPicked}}" hint-placeholder-val="{{ true }}">
+        <button type="button" onClick="{{c.pick}}" aria-label="{{c.aria}}" style="display: flex; align-items: center; gap: 8px; height: 52px; border: 3px solid #111111; border-radius: 4px; background: #FFFFFF; color: #111111; font-size: 15px; font-weight: 900; text-align: left; padding: 0 10px; box-shadow: 4px 4px 0 #111111">
+          <span aria-hidden="true" style="width: 12px; height: 26px; flex: none; background: {{c.bg}}; border: 2px solid #111111; border-radius: 2px"></span>
+          <span style="line-height: 1.15">{{c.name}}</span>
+        </button>
+      </sc-if>
+    </sc-for>
+  </div>
+
+  <footer style="background: #FFFFFF; border-top: 3px solid #111111; padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <span style="font-family: 'Bangers', Impact, sans-serif; font-size: 20px; letter-spacing: 1px">MY PICKS</span>
+      <a href="E-Results.dc.html" style="font-size: 14px; font-weight: 900">See who's winning</a>
+    </div>
+    <sc-if value="{{hasPicks}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-wrap: wrap; gap: 6px">
+        <sc-for list="{{chosen}}" as="p" hint-placeholder-count="3">
+          <span style="display: flex; align-items: center; gap: 6px; border: 2px solid #111111; border-radius: 999px; padding: 2px 10px 2px 2px; font-size: 14px; font-weight: 900; background: #FFF6C2">
+            <span style="width: 24px; height: 24px; border-radius: 50%; background: #E8252E; color: #FFFFFF; font-family: 'Bangers', Impact, sans-serif; font-size: 16px; display: flex; align-items: center; justify-content: center">{{p.n}}</span>
+            {{p.name}}
+          </span>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{noPicks}}" hint-placeholder-val="{{ false }}">
+      <div style="font-size: 14px; font-weight: 800; color: #444444; padding: 4px 0">Nothing yet. Tap a candy!</div>
+    </sc-if>
+    <div style="display: flex; gap: 10px">
+      <button type="button" onClick="{{clear}}" style="height: 56px; padding: 0 16px; border: 3px solid #111111; border-radius: 4px; background: #FFFFFF; color: #111111; font-size: 15px; font-weight: 900; box-shadow: 3px 3px 0 #111111">Start over</button>
+      <sc-if value="{{hasPicks}}" hint-placeholder-val="{{ true }}">
+        <a href="E-Thanks.dc.html" style="flex: 1; height: 56px; border: 3px solid #111111; border-radius: 4px; background: #E8252E; color: #FFFFFF; font-family: 'Bangers', Impact, sans-serif; font-size: 28px; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; text-decoration: none; box-shadow: 4px 4px 0 #111111">I'M DONE!</a>
+      </sc-if>
+      <sc-if value="{{noPicks}}" hint-placeholder-val="{{ false }}">
+        <button type="button" disabled="disabled" style="flex: 1; height: 56px; border: 3px solid #8A8A8A; border-radius: 4px; background: #E6E6E6; color: #6A6A6A; font-family: 'Bangers', Impact, sans-serif; font-size: 28px; letter-spacing: 1px">I'M DONE!</button>
+      </sc-if>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+var CANDIES = [
+  { id: 'reeses', name: "Reese's Cups", bg: '#F47B20' },
+  { id: 'snickers', name: 'Snickers', bg: '#4A2A17' },
+  { id: 'kitkat', name: 'Kit Kat', bg: '#C8102E' },
+  { id: 'twix', name: 'Twix', bg: '#D4A63A' },
+  { id: 'hersheys', name: "Hershey's Milk Chocolate", bg: '#3D2314' },
+  { id: 'butterfinger', name: 'Butterfinger', bg: '#FFD200' },
+  { id: 'musketeers', name: '3 Musketeers', bg: '#C9D3DB' },
+  { id: 'milkyway', name: 'Milky Way', bg: '#2E1B10' },
+  { id: 'crunch', name: 'Crunch', bg: '#0A4DA2' },
+  { id: 'skittles', name: 'Skittles', bg: '#C8141A' },
+  { id: 'starburst', name: 'Starburst', bg: '#FBB8CF' },
+  { id: 'mms', name: "Peanut M&M's", bg: '#FDC300' },
+  { id: 'cookies', name: "Cookies 'n' Creme", bg: '#F4F1EA' }
+];
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var picks = (this.state && this.state.picks) || ['butterfinger', 'snickers', 'milkyway'];
+    var toggle = function (id) {
+      var next = picks.slice();
+      var i = next.indexOf(id);
+      if (i >= 0) { next.splice(i, 1); } else { next.push(id); }
+      self.setState({ picks: next });
+    };
+    var candies = CANDIES.map(function (c) {
+      var rank = picks.indexOf(c.id) + 1;
+      return {
+        id: c.id, name: c.name, bg: c.bg, rank: rank,
+        picked: rank > 0, notPicked: rank === 0,
+        aria: rank > 0 ? c.name + ', pick number ' + rank : c.name,
+        pick: function () { toggle(c.id); }
+      };
+    });
+    var chosen = picks.map(function (id, i) {
+      var c = CANDIES.filter(function (x) { return x.id === id; })[0];
+      return { n: i + 1, name: c.name };
+    });
+    return {
+      candies: candies, chosen: chosen,
+      hasPicks: chosen.length > 0, noPicks: chosen.length === 0,
+      clear: function () { self.setState({ picks: [] }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

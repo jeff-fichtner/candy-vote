@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Marquee · Vote is in</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&amp;family=Nunito:wght@600;800;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#F5C542}a:hover{color:#FFE08A}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #2A0710; color: #FFF4DC; font-family: 'Nunito', system-ui, sans-serif; display: flex; overflow: hidden; position: relative">
+  <div aria-hidden="true" style="width: 64px; height: 100%; background: repeating-linear-gradient(90deg, #7A1426 0px, #9C1C33 10px, #7A1426 20px); border-right: 4px solid #F5C542; border-bottom-right-radius: 48px"></div>
+  <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 0 14px; text-align: center">
+    <svg aria-hidden="true" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="#F5C542" stroke-width="1.4" stroke-linejoin="round"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"></path></svg>
+    <div style="font-family: 'Bungee', system-ui, sans-serif; font-size: 40px; line-height: 1.05; color: #F5C542">TAKE A<br>BOW!</div>
+    <p style="margin: 0; font-size: 22px; font-weight: 900">Your vote is in.</p>
+    <p style="margin: 0; font-size: 17px; font-weight: 700; color: #E9D8B8; line-height: 1.4">Now pass it to the next friend so they can pick their favorites.</p>
+    <a href="Main.dc.html" style="margin-top: 12px; width: 100%; height: 64px; border-radius: 16px; background: #F5C542; color: #2A0710; font-family: 'Bungee', system-ui, sans-serif; font-size: 22px; display: flex; align-items: center; justify-content: center; text-decoration: none">Next voter</a>
+  </div>
+  <div aria-hidden="true" style="width: 64px; height: 100%; background: repeating-linear-gradient(90deg, #7A1426 0px, #9C1C33 10px, #7A1426 20px); border-left: 4px solid #F5C542; border-bottom-left-radius: 48px"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

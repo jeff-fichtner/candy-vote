@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ticket Booth · Vote is in</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&amp;family=Arvo:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#A51C25}a:hover{color:#7A1219}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F3E9D2; color: #1E1A17; font-family: 'Arvo', Georgia, serif; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; padding: 0 28px; text-align: center; overflow: hidden">
+  <div style="position: relative; width: 100%; background: #FFFBF0; border: 3px solid #1E1A17; border-radius: 10px; display: flex; flex-direction: column">
+    <div style="padding: 26px 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <div style="font-size: 12px; font-weight: 700; letter-spacing: 3px; color: #6E625A">KING SIZE SHOWDOWN</div>
+      <div style="font-family: 'Alfa Slab One', Georgia, serif; font-size: 38px; line-height: 1.05">Your vote<br>is in!</div>
+    </div>
+    <div style="border-top: 3px dashed #1E1A17; padding: 14px 18px; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #6E625A">ADMIT ONE · PLAYHOUSE 395</div>
+    <div aria-hidden="true" style="position: absolute; right: -10px; top: 18px; transform: rotate(14deg); border: 4px solid #A51C25; color: #A51C25; border-radius: 8px; padding: 4px 12px; font-family: 'Alfa Slab One', Georgia, serif; font-size: 26px; letter-spacing: 2px; background: rgba(255, 251, 240, 0.85)">VOTED</div>
+  </div>
+  <p style="margin: 0; font-size: 18px; line-height: 1.45">Now hand it to the next friend so they can pick their favorites.</p>
+  <a href="C-Picking.dc.html" style="width: 100%; height: 64px; border-radius: 8px; background: #A51C25; color: #FFF7E6; font-family: 'Alfa Slab One', Georgia, serif; font-size: 23px; display: flex; align-items: center; justify-content: center; text-decoration: none">Next voter</a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ticket Booth · Standings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&amp;family=Arvo:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font-family:inherit;cursor:pointer}
+a{color:#A51C25}a:hover{color:#7A1219}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F3E9D2; color: #1E1A17; font-family: 'Arvo', Georgia, serif; display: flex; flex-direction: column; overflow: hidden; padding: 22px 16px 16px; gap: 14px">
+  <div style="background: #FFFBF0; border: 3px solid #1E1A17; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+    <div style="text-align: center; border-bottom: 2px solid #1E1A17; padding-bottom: 10px; display: flex; flex-direction: column; gap: 2px">
+      <div style="font-size: 12px; font-weight: 700; letter-spacing: 3px; color: #6E625A">NOW SHOWING</div>
+      <div style="font-family: 'Alfa Slab One', Georgia, serif; font-size: 30px; line-height: 1.05">The Standings</div>
+      <div style="font-size: 14px; color: #6E625A">23 kids have voted so far</div>
+    </div>
+    <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px">
+      <li style="display: flex; align-items: baseline; gap: 10px">
+        <span style="font-family: 'Alfa Slab One', Georgia, serif; font-size: 34px; color: #A51C25; width: 34px">1</span>
+        <span style="font-family: 'Alfa Slab One', Georgia, serif; font-size: 26px">Reese's Cups</span>
+      </li>
+      <li style="display: flex; align-items: baseline; gap: 10px">
+        <span style="font-family: 'Alfa Slab One', Georgia, serif; font-size: 26px; color: #A51C25; width: 34px">2</span>
+        <span style="font-size: 21px; font-weight: 700">Kit Kat</span>
+      </li>
+      <li style="display: flex; align-items: baseline; gap: 10px">
+        <span style="font-family: 'Alfa Slab One', Georgia, serif; font-size: 26px; color: #A51C25; width: 34px">3</span>
+        <span style="font-size: 21px; font-weight: 700">Snickers</span>
+      </li>
+      <li style="display: flex; align-items: baseline; gap: 10px">
+        <span style="font-family: 'Alfa Slab One', Georgia, serif; font-size: 22px; color: #A51C25; width: 34px">4</span>
+        <span style="font-size: 18px; font-weight: 700">Twix</span>
+      </li>
+      <li style="display: flex; align-items: baseline; gap: 10px">
+        <span style="font-family: 'Alfa Slab One', Georgia, serif; font-size: 22px; color: #A51C25; width: 34px">5</span>
+        <span style="font-size: 18px; font-weight: 700">Peanut M&amp;M's</span>
+      </li>
+    </ol>
+    <div style="border-top: 2px dashed #1E1A17; padding-top: 10px; display: flex; flex-direction: column; gap: 4px">
+      <div style="font-size: 12px; font-weight: 700; letter-spacing: 2px; color: #6E625A">ALSO APPEARING, IN ORDER</div>
+      <p style="margin: 0; font-size: 14px; line-height: 1.6">6 Skittles · 7 Cookies 'n' Creme · 8 Butterfinger · 9 Starburst · 10 Crunch · 11 Milky Way · 12 3 Musketeers · 13 Hershey's Milk Chocolate</p>
+    </div>
+  </div>
+
+  <div style="flex: 1"></div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <a href="C-Picking.dc.html" style="height: 56px; border-radius: 6px; background: #A51C25; color: #FFF7E6; font-family: 'Alfa Slab One', Georgia, serif; font-size: 20px; display: flex; align-items: center; justify-content: center; text-decoration: none">Back to voting</a>
+    <sc-if value="{{notConfirming}}" hint-placeholder-val="{{ true }}">
+      <button type="button" onClick="{{askErase}}" style="height: 48px; border-radius: 6px; border: 2px solid #1E1A17; background: transparent; color: #1E1A17; font-size: 15px; font-weight: 700">Erase all votes</button>
+    </sc-if>
+    <sc-if value="{{confirming}}" hint-placeholder-val="{{ false }}">
+      <div style="border: 3px solid #A51C25; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: #FFFBF0">
+        <div style="font-size: 16px; font-weight: 700; text-align: center">Erase all 23 votes? This can't be undone.</div>
+        <div style="display: flex; gap: 10px">
+          <button type="button" onClick="{{cancel}}" style="flex: 1; height: 48px; border-radius: 6px; border: 2px solid #1E1A17; background: transparent; color: #1E1A17; font-size: 15px; font-weight: 700">Keep them</button>
+          <button type="button" onClick="{{cancel}}" style="flex: 1; height: 48px; border-radius: 6px; border: 0; background: #A51C25; color: #FFF7E6; font-size: 15px; font-weight: 700">Yes, erase</button>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var confirming = !!(this.state && this.state.confirming);
+    return {
+      confirming: confirming,
+      notConfirming: !confirming,
+      askErase: function () { self.setState({ confirming: true }); },
+      cancel: function () { self.setState({ confirming: false }); }
+    };
+  }
+}
+</script>
+</body>
+</html>
