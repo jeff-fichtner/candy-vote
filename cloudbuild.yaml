@@ -1,6 +1,6 @@
 # Cloud Build config for the deploy. Invoked by the per-app deploy job (see DEPLOY.md) via:
 #   gcloud builds submit --config=cloudbuild.yaml \
-#     --substitutions=TAG_NAME=vX.Y.Z,SHORT_SHA=<sha>,_SERVICE=<service>,_REGION=<region>,_APP_ENV_NAME=<env>,_RUN_SA=<runtime-SA>
+#     --substitutions=TAG_NAME=vX.Y.Z,SHORT_SHA=<sha>,_SERVICE=<service>,_REGION=<region>,_APP_ENV_NAME=<env>,_RUN_SA=<runtime-SA>,_FIRESTORE_DATABASE=<db>,_OWNER_KEY_SECRET=<secret>
 # (One --substitutions flag carrying every value: a second flag replaces the first, it does not
 # add to it.)
 #
@@ -40,6 +40,11 @@ substitutions:
   # REQUIRED — the Cloud Run runtime service account (see the header). Named on every deploy,
   # never inherited: Cloud Run keeps the existing account when --service-account is omitted.
   _RUN_SA: ''
+  # REQUIRED — the Firestore database that holds the ballots (FIRESTORE_DATABASE at runtime).
+  _FIRESTORE_DATABASE: ''
+  # REQUIRED — the Secret Manager secret holding the owner device's key (OWNER_KEY at runtime),
+  # read at its latest version. The runtime service account needs secretAccessor on it.
+  _OWNER_KEY_SECRET: ''
   # The image repository in _REGION's Artifact Registry, shared by every app and environment that
   # deploys to that region. A wrong name — or a region with no such repository — fails the push
   # outright, so it keeps its default.
@@ -68,6 +73,8 @@ steps:
         [ -n "${_REGION}" ]        || missing="$${missing} _REGION"
         [ -n "${_APP_ENV_NAME}" ]  || missing="$${missing} _APP_ENV_NAME"
         [ -n "${_RUN_SA}" ]        || missing="$${missing} _RUN_SA"
+        [ -n "${_FIRESTORE_DATABASE}" ] || missing="$${missing} _FIRESTORE_DATABASE"
+        [ -n "${_OWNER_KEY_SECRET}" ]   || missing="$${missing} _OWNER_KEY_SECRET"
         if [ -n "$${missing}" ]; then
           echo "cloudbuild.yaml: required substitution(s) not set:$${missing} (see DEPLOY.md)" >&2
           exit 1
@@ -145,7 +152,7 @@ steps:
           echo "cloudbuild.yaml: the push step recorded no digest in $${IMAGE_REPO}" >&2
           exit 1
         fi
-        ENV_VARS="NODE_ENV=production,APP_VERSION=${TAG_NAME},BUILD_GIT_COMMIT=${SHORT_SHA},BUILD_DATE=$$(cat /workspace/build_date.txt)"
+        ENV_VARS="NODE_ENV=production,APP_VERSION=${TAG_NAME},BUILD_GIT_COMMIT=${SHORT_SHA},BUILD_DATE=$$(cat /workspace/build_date.txt),GCP_PROJECT=${PROJECT_ID},FIRESTORE_DATABASE=${_FIRESTORE_DATABASE}"
         # --ingress locks the service to the load balancer (rejects direct *.run.app) on EVERY
         # deploy, so a first deploy doesn't silently come up reachable on run.app. It is
         # idempotent and always correct for an LB-fronted service. The OTHER half — the one-time
@@ -154,14 +161,17 @@ steps:
         # the LB returns a Google-frontend 403; the deploy will succeed but the host 403s until
         # the grant is applied.
         # --service-account is named on every revision rather than carried forward by Cloud Run;
-        # the `require` step has already refused an empty value.
+        # the `require` step has already refused an empty value. --set-env-vars and --set-secrets
+        # replace the service's whole set on every deploy, so together they name everything the
+        # app reads.
         gcloud run deploy ${_SERVICE} \
           --image="$${IMAGE}" \
           --project=${PROJECT_ID} \
           --region=${_REGION} \
           --ingress=internal-and-cloud-load-balancing \
           --service-account=${_RUN_SA} \
-          --set-env-vars="$${ENV_VARS}"
+          --set-env-vars="$${ENV_VARS}" \
+          --set-secrets="OWNER_KEY=${_OWNER_KEY_SECRET}:latest"
 
 images:
   - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${TAG_NAME}-${SHORT_SHA}

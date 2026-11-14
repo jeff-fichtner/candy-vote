@@ -1,4 +1,4 @@
-# Validate and version. One branch, main, which is production (environments.json).
+# Validate, version and deploy. One branch, main, which is production (environments.json).
 #
 # Wired from snackbyte-release-flow-action's CONSUMING.md ("Build once — promote staging's build",
 # on Recipe A). The release flow resolves whether a branch is an environment and derives and pushes
@@ -11,8 +11,8 @@
 # The gate needs the Firestore emulator (the ballot store's tests run against it, never a fake), so
 # each gate installs Java 25 and the gcloud emulator component first.
 #
-# Every job bills at least a minute, so there are as few as can be: one on a pull request, one on a
-# release push.
+# Every job bills at least a minute, so there are as few as can be: one on a pull request, and on a
+# release push the tag-writing job plus the deploy, which holds the cloud credentials.
 #
 # Every `uses:` is pinned to a full commit SHA with its release in a comment; Dependabot moves them.
 name: ci-cd
@@ -27,6 +27,14 @@ permissions:
 
 env:
   NODE_VERSION: '26' # Node major for the gate (keep aligned with .nvmrc)
+  PROJECT_ID: snackbyte-apps
+  REGION: us-central1
+  WIF_PROVIDER: projects/917114118367/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+  DEPLOY_SA: snackbyte-deployer@snackbyte-apps.iam.gserviceaccount.com
+  SERVICE: candy-vote
+  RUN_SA: candy-vote-runtime@snackbyte-apps.iam.gserviceaccount.com
+  FIRESTORE_DATABASE: candy-vote
+  OWNER_KEY_SECRET: candy-vote-owner-key
 
 jobs:
   # Merge gate: PRs must pass the quality gate, and the image must build.
@@ -109,3 +117,34 @@ jobs:
         uses: jeff-fichtner/snackbyte-release-flow-action@01d5fa53356ad4b04b2388a43eda867cc947b670 # v1.2.7
         with:
           expect-tag: ${{ steps.lookup.outputs.tag }} # refuse any tag the look-up did not report
+
+  # Build the tagged tree and deploy it to Cloud Run via Cloud Build (cloudbuild.yaml), behind the
+  # shared load balancer at showdown.playhouse395.com. Its own job because it holds the cloud
+  # credentials (keyless, through Workload Identity Federation).
+  deploy:
+    name: deploy to Cloud Run
+    needs: version-and-tag
+    if: github.event_name == 'push' && needs.version-and-tag.outputs.is-env == 'true'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
+    permissions: { contents: read, id-token: write } # id-token for WIF
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { ref: '${{ needs.version-and-tag.outputs.tag }}' }
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+      - name: Build and deploy via Cloud Build
+        env:
+          TAG: ${{ needs.version-and-tag.outputs.tag }}
+        run: |
+          gcloud builds submit \
+            --config=cloudbuild.yaml \
+            --substitutions="TAG_NAME=${TAG},SHORT_SHA=$(git rev-parse --short HEAD),_SERVICE=${SERVICE},_REGION=${REGION},_APP_ENV_NAME=production,_RUN_SA=${RUN_SA},_FIRESTORE_DATABASE=${FIRESTORE_DATABASE},_OWNER_KEY_SECRET=${OWNER_KEY_SECRET}" \
+            --service-account="projects/${PROJECT_ID}/serviceAccounts/${DEPLOY_SA}" \
+            --default-buckets-behavior=REGIONAL_USER_OWNED_BUCKET \
+            --project="$PROJECT_ID" --region="$REGION" .
