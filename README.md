@@ -32,7 +32,7 @@ npm run dev      # dev server at the URL Vite prints
 ```
 
 `npm run dev` and `npm test` start the Firestore emulator, which needs gcloud's
-`cloud-firestore-emulator` component and Java 21 or later. The local `.env` points the app at the
+`cloud-firestore-emulator` component and Java 25 or later. The local `.env` points the app at the
 emulator; its data lasts until `npm run dev` stops.
 
 The local environment is the committed `.env`, which documents every variable. While it holds
@@ -83,16 +83,12 @@ the prerendered markup.
 
 ## CI
 
-**This repo ships no CI workflow yet.** Adding one is a deliberate, one-time step: follow
-**`CONSUMING.md`** in `jeff-fichtner/snackbyte-release-flow-action`, which owns the workflow
-wiring and the repo settings it needs. Until then a push runs nothing and tags nothing.
-
-Once wired, the flow gates pull requests and, on each push, runs the checks and **derives a
-version tag from git history** — `dev` → `vX.Y.Z-dev` (staging), `main` → `vX.Y.Z`
-(production). The PATCH is not stored in `package.json` (which holds only `MAJOR.MINOR`); CI
-creates and pushes the **tag only**, never a commit. The tag is the deploy signal.
-`environments.json` at the repo root declares which branches are environments — it is already
-here, because the app's own build reads it too.
+CI is `.github/workflows/ci-cd.yml`, wired from `CONSUMING.md` in
+`jeff-fichtner/snackbyte-release-flow-action`. A pull request runs one job, `validate (merge gate)`,
+which branch protection on `main` requires. A push to `main`, the only branch and production, runs
+the checks and **derives a version tag from git history** (`vX.Y.Z`). The PATCH is not stored in
+`package.json` (which holds only `MAJOR.MINOR`); CI creates and pushes the **tag only**, never a
+commit. `environments.json` declares `main` as the one environment; the app's build reads it too.
 
 See [DEPLOY.md](DEPLOY.md) for the full versioning + CI/deploy model.
 

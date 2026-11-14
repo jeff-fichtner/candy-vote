@@ -1,16 +1,15 @@
-# Validate and version. The pushed branch selects the environment through environments.json:
-# dev → staging, main → production.
+# Validate and version. One branch, main, which is production (environments.json).
 #
 # Wired from snackbyte-release-flow-action's CONSUMING.md ("Build once — promote staging's build",
 # on Recipe A). The release flow resolves whether a branch is an environment and derives and pushes
 # the version tag, a tag only, never a commit.
 #
 # Two gates protect a release: a PR is blocked until `check:all` passes, and `check:all` runs again
-# on the push before anything is tagged, so a tag on a tree means that tree passed. A promotion
-# (dev → main of a tree dev already released) is looked up first and skips the checks.
+# on the push before anything is tagged, so a tag on a tree means that tree passed. A push of a tree
+# already released (a re-run) is looked up first and skips the checks.
 #
 # The gate needs the Firestore emulator (the ballot store's tests run against it, never a fake), so
-# each gate installs Java 21 and the gcloud emulator component first.
+# each gate installs Java 25 and the gcloud emulator component first.
 #
 # Every job bills at least a minute, so there are as few as can be: one on a pull request, one on a
 # release push.
@@ -21,7 +20,7 @@ name: ci-cd
 on:
   pull_request:
   push:
-    branches: [main, dev] # the environment branches; a work branch runs only on its pull request
+    branches: [main] # the environment branch; a work branch runs only on its pull request
 
 permissions:
   contents: read
@@ -47,7 +46,7 @@ jobs:
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
         with:
           install_components: cloud-firestore-emulator
@@ -61,9 +60,8 @@ jobs:
     name: version and tag
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    # Serialize per RELEASABLE, not per branch: the build id is global across every environment
-    # branch, so a per-branch group lets main and dev race to the same number. It also keeps the
-    # look-up and the tag in step.
+    # Serialize per RELEASABLE, not per branch: the build id is global, so two runs must never race
+    # to the same number. It also keeps the look-up and the tag in step.
     concurrency:
       group: release
       cancel-in-progress: false
@@ -96,7 +94,7 @@ jobs:
         uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
       - if: steps.lookup.outputs.released-as == ''
         uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
         with:

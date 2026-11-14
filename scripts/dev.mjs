@@ -63,7 +63,7 @@ await new Promise((resolve) => {
   emulator.stderr.on('data', onData);
   emulator.on('error', (error) => {
     console.error(
-      `The Firestore emulator (gcloud cloud-firestore-emulator, Java 21+) could not start: ${error.message}`,
+      `The Firestore emulator (gcloud cloud-firestore-emulator, Java 25+) could not start: ${error.message}`,
     );
     stopAll(1);
   });
