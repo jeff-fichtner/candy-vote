@@ -99,8 +99,13 @@ Run. There is no manual deploy script — a `gcloud run deploy --source .` short
 ingress lock and run under default identities, so the escape hatch is the same Cloud Build run by
 hand (the command is in [DEPLOY.md](DEPLOY.md)).
 
-Once CI is wired (see **CI** above — it is not, yet), a push to an environment branch derives a
-version tag and the chained `deploy` job runs that build for you.
+A push to `main` derives a version tag and the chained `deploy` job runs that build: Cloud Run
+service `candy-vote` in `snackbyte-apps` (us-central1), runtime identity `candy-vote-runtime`, which
+can reach only the Firestore database `candy-vote` and the secret `candy-vote-owner-key` (the
+owner key; its copy and the setup link are in 1Password, `app-secrets` → `candy-vote.prod`). The
+shared load balancer serves it at `showdown.playhouse395.com` (path matcher `candy-vote-pm`,
+certificate `showdown-playhouse395-cert`). To revoke every owner device, add a new version of the
+secret and redeploy.
 
 Idle cost is near zero — Cloud Run scales to zero and bills only while handling a request.
 
