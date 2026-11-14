@@ -14,11 +14,11 @@ Cloud Run. The voting screen is prerendered.
 
 ## Develop
 
-This app runs on Node 24 (see `.nvmrc`); confirm `node --version` prints `v24.x`
+This app runs on Node 26 (see `.nvmrc`); confirm `node --version` prints `v26.x`
 (`nvm use` switches to it in an interactive shell).
 
 ```bash
-node --version   # expect v24.x
+node --version   # expect v26.x
 npm install
 npm run dev      # dev server at the URL Vite prints
 ```

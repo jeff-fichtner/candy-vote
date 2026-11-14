@@ -5,7 +5,7 @@
   "type": "module",
   "description": "candy-vote — a snackbyte app.",
   "engines": {
-    "node": ">=24 <25"
+    "node": ">=26 <27"
   },
   "scripts": {
     "dev": "node scripts/dev.mjs",
