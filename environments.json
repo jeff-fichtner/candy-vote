@@ -7,13 +7,6 @@
       "isPublicFace": true,
       "noindex": false,
       "tagSuffix": ""
-    },
-    {
-      "name": "staging",
-      "branch": "dev",
-      "isPublicFace": false,
-      "noindex": true,
-      "tagSuffix": "-dev"
     }
   ]
 }

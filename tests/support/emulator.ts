@@ -1,7 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 
 /**
- * Starts the Firestore emulator (gcloud's cloud-firestore-emulator component, Java 21+) on
+ * Starts the Firestore emulator (gcloud's cloud-firestore-emulator component, Java 25+) on
  * `hostPort` and resolves once it is serving. The emulator runs in its own process group, so
  * `stop` ends gcloud and the Java server it starts.
  */
