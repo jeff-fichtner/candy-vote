@@ -335,6 +335,11 @@ button:focus-visible {
   box-shadow: 0 0 22px rgba(138, 216, 248, 0.55);
 }
 
+.thanks-standings {
+  margin-top: 12px;
+  min-height: 44px;
+}
+
 /* Standings */
 
 .standings .lede {

@@ -54,7 +54,9 @@ export function App() {
           onShowStandings={() => setScreen('standings')}
         />
       )}
-      {screen === 'thanks' && owner && <ThanksScreen onNext={startVoter} />}
+      {screen === 'thanks' && owner && (
+        <ThanksScreen onNext={startVoter} onShowStandings={() => setScreen('standings')} />
+      )}
       <VersionChip />
     </>
   );
