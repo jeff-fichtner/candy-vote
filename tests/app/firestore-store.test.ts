@@ -41,6 +41,14 @@ describe('Firestore ballot store (emulator)', () => {
     await store.clear();
     expect(await store.list()).toEqual([]);
   });
+
+  it('keeps voting closed until it is opened, and closes it again', async () => {
+    expect(await store.votingOpen()).toBe(false);
+    await store.setVotingOpen(true);
+    expect(await store.votingOpen()).toBe(true);
+    await store.setVotingOpen(false);
+    expect(await store.votingOpen()).toBe(false);
+  });
 });
 
 describe('readStoreConfig', () => {

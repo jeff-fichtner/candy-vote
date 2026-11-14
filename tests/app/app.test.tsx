@@ -4,9 +4,12 @@ import { createRoot, type Root } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
 import { App } from '../../src/web/App';
 import { addVote, removeVote, votesUsed } from '../../src/web/PickScreen';
-import { CANDIES } from '../../src/shared/candies';
+import { standings, type Votes } from '../../src/shared/ballot';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+const KEY = 'test-owner-key-0123456789abcdefghijklmnop';
+const STORAGE = 'candy-vote-owner-key';
 
 describe('vote helpers', () => {
   it('adds votes up to three, stacking on one candy', () => {
@@ -25,42 +28,96 @@ describe('vote helpers', () => {
 });
 
 describe('prerendered page', () => {
-  it('ships the voting screen with every candy and no votes used', () => {
+  it('ships the standings screen, with no voting and no owner controls', () => {
     const html = renderToString(<App />);
-    expect(html).toContain('King Size Showdown');
-    for (const candy of CANDIES) {
-      expect(html).toContain(candy.name.replaceAll('&', '&amp;').replaceAll("'", '&#x27;'));
-    }
-    expect(html).toContain('3 votes left');
+    expect(html).toContain('The Standings');
+    expect(html).toContain('Counting the votes');
+    expect(html).not.toContain('Start voting');
+    expect(html).not.toContain('Give it a vote');
   });
 });
 
-describe('voting on one device', () => {
+/** A stand-in for the server: the same rules as the real routes, held in memory. */
+function fakeServer() {
+  const state = { ballots: [] as Votes[], open: false, deletes: 0 };
+  const isOwner = (init?: RequestInit) =>
+    (init?.headers as Record<string, string> | undefined)?.Authorization === `Bearer ${KEY}`;
+  const reply = (status: number, body: unknown) =>
+    new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+  const fetch = vi.fn(async (path: string, init?: RequestInit) => {
+    const method = init?.method ?? 'GET';
+    if (path === '/api/me') return reply(200, { owner: isOwner(init) });
+    if (path === '/api/standings') {
+      return reply(200, { ...standings(state.ballots), votingOpen: state.open });
+    }
+    if (!isOwner(init)) return reply(403, { error: 'only the owner device can do this' });
+    if (path === '/api/voting') {
+      state.open = (JSON.parse(init?.body as string) as { open: boolean }).open;
+      return reply(200, { votingOpen: state.open });
+    }
+    if (path === '/api/ballots' && method === 'POST') {
+      if (!state.open) return reply(409, { error: 'voting is closed' });
+      state.ballots.push((JSON.parse(init?.body as string) as { votes: Votes }).votes);
+      return reply(201, { ok: true });
+    }
+    if (path === '/api/ballots' && method === 'DELETE') {
+      state.ballots = [];
+      state.deletes += 1;
+      return reply(200, { ok: true });
+    }
+    return reply(404, {});
+  });
+  return { state, fetch };
+}
+
+describe('the page in a browser', () => {
   let container: HTMLDivElement;
   let root: Root;
-  const fetchMock = vi.fn();
+  let server: ReturnType<typeof fakeServer>;
 
+  const buttons = () => [...container.querySelectorAll('button')];
+  const find = (label: RegExp) =>
+    buttons().find((b) => label.test(b.getAttribute('aria-label') ?? b.textContent ?? ''));
   const button = (label: RegExp): HTMLButtonElement => {
-    const found = [...container.querySelectorAll('button')].find((b) =>
-      label.test(b.getAttribute('aria-label') ?? b.textContent ?? ''),
-    );
-    if (!found) throw new Error(`no button matching ${label}`);
+    const found = find(label);
+    if (!found) throw new Error(`no button matching ${label} in: ${container.textContent}`);
     return found;
+  };
+  const settle = async () => {
+    for (let i = 0; i < 5; i++) {
+      await act(async () => {
+        await Promise.resolve();
+      });
+    }
   };
   const click = async (label: RegExp) => {
     await act(async () => {
       button(label).click();
     });
+    await settle();
   };
   const text = () => container.textContent ?? '';
-
-  beforeEach(() => {
-    fetchMock.mockReset();
-    vi.stubGlobal('fetch', fetchMock);
+  const open = async (hash = '') => {
+    window.history.replaceState(null, '', `/${hash}`);
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
     act(() => root.render(<App />));
+    await settle();
+  };
+
+  beforeEach(() => {
+    server = fakeServer();
+    vi.stubGlobal('fetch', server.fetch);
+    // Node 26's own `localStorage` global (undefined without --localstorage-file) hides jsdom's,
+    // so each test gets a fresh in-memory one.
+    const items = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => items.get(key) ?? null,
+      setItem: (key: string, value: string) => void items.set(key, String(value)),
+      removeItem: (key: string) => void items.delete(key),
+      clear: () => items.clear(),
+    });
   });
 
   afterEach(() => {
@@ -69,81 +126,87 @@ describe('voting on one device', () => {
     vi.unstubAllGlobals();
   });
 
-  it('stacks votes, locks the other candies at three, and saves the ballot', async () => {
-    fetchMock.mockResolvedValue(new Response('{"ok":true}', { status: 201 }));
-    expect(button(/^I'm done!$/).disabled).toBe(true);
+  it('shows anyone else only the standings', async () => {
+    server.state.ballots.push({ reeses: 3 }, { kitkat: 2, reeses: 1 });
+    await open();
+    expect(text()).toContain('2 kids have voted so far');
+    expect(text()).toContain('Voting is closed.');
+    expect(text()).toContain("Reese's Cups4 votes");
+    expect(text()).toContain('No votes yet');
+    expect(text()).not.toContain('0 votes');
+    for (const label of [/Start voting/, /Erase all votes/, /Next voter/, /Stop voting/]) {
+      expect(find(label)).toBeUndefined();
+    }
+  });
+
+  it('takes the key from a setup link, hides it, and gives the owner the controls', async () => {
+    await open(`#owner=${KEY}`);
+    expect(window.location.hash).toBe('');
+    expect(window.localStorage.getItem(STORAGE)).toBe(KEY);
+    expect(button(/^Start voting$/)).toBeTruthy();
+  });
+
+  it('runs a voting cycle on the owner device: start, kids vote, stop', async () => {
+    window.localStorage.setItem(STORAGE, KEY);
+    await open();
+
+    await click(/^Start voting$/);
+    expect(server.state.open).toBe(true);
+    expect(text()).toContain('3 votes left');
 
     await click(/^Kit Kat, no votes/);
     await click(/^Kit Kat, 1 vote/);
     await click(/^Twix, no votes/);
     expect(text()).toContain('All 3 votes used!');
     expect(button(/^Reese's Cups, no votes/).disabled).toBe(true);
-
     await click(/^Take a vote back from Twix/);
-    expect(text()).toContain('1 vote left');
     await click(/^Kit Kat, 2 votes/);
-
     await click(/^I'm done!$/);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [path, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(path).toBe('/api/ballots');
-    expect(init.method).toBe('POST');
-    expect(JSON.parse(init.body as string)).toEqual({ votes: { kitkat: 3 } });
     expect(text()).toContain('Your vote is in!');
+    expect(server.state.ballots).toEqual([{ kitkat: 3 }]);
 
     await click(/^Next voter$/);
-    expect(text()).toContain('3 votes left');
-    expect(button(/^Kit Kat, no votes/)).toBeTruthy();
-  });
-
-  it('lets a kid finish after one vote', async () => {
-    fetchMock.mockResolvedValue(new Response('{"ok":true}', { status: 201 }));
     await click(/^Crunch, no votes/);
-    expect(button(/^I'm done!$/).disabled).toBe(false);
     await click(/^I'm done!$/);
-    expect(
-      JSON.parse((fetchMock.mock.calls[0] as [string, RequestInit])[1].body as string),
-    ).toEqual({ votes: { crunch: 1 } });
-  });
+    expect(server.state.ballots).toEqual([{ kitkat: 3 }, { crunch: 1 }]);
 
-  it('keeps the votes on screen and says so when saving fails', async () => {
-    fetchMock.mockResolvedValue(new Response('{"error":"x"}', { status: 500 }));
-    await click(/^Snickers, no votes/);
-    await click(/^I'm done!$/);
-    expect(text()).toContain("Your vote didn't save");
-    expect(button(/^Snickers, 1 vote/)).toBeTruthy();
-  });
-
-  it('shows the standings and erases only after a second tap', async () => {
-    const standings = {
-      voters: 2,
-      rows: CANDIES.map((c, i) => ({
-        ...c,
-        votes: i === 0 ? 4 : i === 1 ? 2 : 0,
-        place: i < 2 ? i + 1 : 3,
-      })),
-    };
-    fetchMock.mockImplementation(async (_path: string, init?: RequestInit) => {
-      if (init?.method === 'DELETE') return new Response('{"ok":true}', { status: 200 });
-      return new Response(JSON.stringify(standings), { status: 200 });
-    });
+    await click(/^Next voter$/);
     await click(/^See the standings$/);
+    expect(text()).toContain('Voting is open!');
     expect(text()).toContain('2 kids have voted so far');
-    expect(text()).toContain("Reese's Cups4 votes");
-    expect(text()).toContain('No votes yet');
-    expect(text()).not.toContain('0 votes');
+    await click(/^Stop voting$/);
+    expect(server.state.open).toBe(false);
+    expect(text()).toContain('Voting is closed.');
+    expect(button(/^Start voting$/)).toBeTruthy();
+  });
 
+  it('says so when voting was stopped before a kid finished', async () => {
+    window.localStorage.setItem(STORAGE, KEY);
+    await open();
+    await click(/^Start voting$/);
+    await click(/^Snickers, no votes/);
+    server.state.open = false;
+    await click(/^I'm done!$/);
+    expect(text()).toContain('Voting is closed right now');
+    expect(server.state.ballots).toEqual([]);
+  });
+
+  it('erases only after the owner confirms', async () => {
+    window.localStorage.setItem(STORAGE, KEY);
+    server.state.ballots.push({ reeses: 3 }, { twix: 1 });
+    await open();
     await click(/^Erase all votes$/);
-    expect(text()).toContain("Erase all 2 votes? This can't be undone.");
-    expect(
-      fetchMock.mock.calls.some((c) => (c[1] as RequestInit | undefined)?.method === 'DELETE'),
-    ).toBe(false);
-
-    standings.voters = 0;
+    expect(text()).toContain("Erase the votes of all 2 kids? This can't be undone.");
+    expect(server.state.deletes).toBe(0);
     await click(/^Yes, erase$/);
-    expect(
-      fetchMock.mock.calls.some((c) => (c[1] as RequestInit | undefined)?.method === 'DELETE'),
-    ).toBe(true);
+    expect(server.state.deletes).toBe(1);
     expect(text()).toContain('Nobody has voted yet.');
+  });
+
+  it('drops a setup link the server refuses and stays a viewer', async () => {
+    await open('#owner=not-the-right-key-0123456789abcdefghij');
+    expect(text()).toContain("That setup link didn't work on this device.");
+    expect(window.localStorage.getItem(STORAGE)).toBeNull();
+    expect(find(/Start voting/)).toBeUndefined();
   });
 });

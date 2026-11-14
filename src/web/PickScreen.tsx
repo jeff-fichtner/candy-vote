@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Votes } from '../shared/ballot';
 import { CANDIES, VOTES_PER_KID } from '../shared/candies';
-import { saveBallot } from './api';
+import { ApiError, saveBallot } from './api';
 import { Header } from './Header';
 
 interface Props {
@@ -49,8 +49,12 @@ export function PickScreen({ votes, onChange, onSaved, onShowStandings }: Props)
     try {
       await saveBallot(votes);
       onSaved();
-    } catch {
-      setError("Your vote didn't save. Ask a grown-up, then tap I'm done! again.");
+    } catch (failure) {
+      setError(
+        failure instanceof ApiError && failure.status === 409
+          ? 'Voting is closed right now, so your vote didn’t count. Ask a grown-up.'
+          : "Your vote didn't save. Ask a grown-up, then tap I'm done! again.",
+      );
     } finally {
       setSaving(false);
     }
