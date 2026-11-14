@@ -1,6 +1,16 @@
 # candy-vote
 
-Vite + React + TypeScript app, deployed to Google Cloud Run.
+The candy vote kids see as **King Size Showdown**: each kid gets 3 votes to give to the king-size
+candy bars they like best (all 3 on one candy is allowed), one kid after another on a shared
+device. The standings rank every candy by its vote total, so the top few are what to buy.
+
+Vite + React + TypeScript, an Express API, and Firestore for the ballots; deployed to Google
+Cloud Run. The voting screen is prerendered.
+
+- `src/shared/candies.ts` is the candy list and the number of votes per kid.
+- `src/shared/ballot.ts` checks a ballot and adds up the standings (tied candies share a place).
+- API: `POST /api/ballots`, `GET /api/standings`, `DELETE /api/ballots` (`src/routes/ballots.ts`).
+- The Matilda logo images in `src/web/public/` come from the show's licensed logo pack.
 
 ## Develop
 
@@ -12,6 +22,10 @@ node --version   # expect v24.x
 npm install
 npm run dev      # dev server at the URL Vite prints
 ```
+
+`npm run dev` and `npm test` start the Firestore emulator, which needs gcloud's
+`cloud-firestore-emulator` component and Java 21 or later. The local `.env` points the app at the
+emulator; its data lasts until `npm run dev` stops.
 
 The local environment is the committed `.env`, which documents every variable. While it holds
 only plain config, `npm run dev` needs no `op run` (see [App secrets](#app-secrets)).

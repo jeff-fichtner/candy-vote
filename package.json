@@ -22,6 +22,7 @@
     "check:all": "npm run format:check && npm run lint && npm run typecheck && npm run check:env && npm test"
   },
   "dependencies": {
+    "@google-cloud/firestore": "^8.7.1",
     "express": "^5.2.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"

@@ -31,5 +31,14 @@ export function readPort(raw: string | undefined): number {
   return port;
 }
 
+/** Returns a required setting, or throws naming it when it is unset or blank. */
+export function required(env: Record<string, string | undefined>, name: string): string {
+  const value = env[name];
+  if (value === undefined || value.trim() === '') {
+    throw new Error(`${name} is required and is not set.`);
+  }
+  return value;
+}
+
 /** Port the server listens on and the dev proxy targets. */
 export const PORT = readPort(process.env.PORT);
