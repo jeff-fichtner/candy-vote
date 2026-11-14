@@ -169,8 +169,8 @@ describe('the page in a browser', () => {
     await click(/^Crunch, no votes/);
     await click(/^I'm done!$/);
     expect(server.state.ballots).toEqual([{ kitkat: 3 }, { crunch: 1 }]);
+    expect(text()).toContain('Your vote is in!');
 
-    await click(/^Next voter$/);
     await click(/^See the standings$/);
     expect(text()).toContain('Voting is open!');
     expect(text()).toContain('2 kids have voted so far');
