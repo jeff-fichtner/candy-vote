@@ -23,6 +23,9 @@ export const CANDIES: readonly Candy[] = [
   { id: 'starburst', name: 'Starburst', color: '#FBB8CF' },
   { id: 'mms', name: "Peanut M&M's", color: '#FDC300' },
   { id: 'cookies', name: "Cookies 'n' Creme", color: '#F4F1EA' },
+  { id: 'bitohoney', name: 'Bit-O-Honey', color: '#F2C94C' },
+  { id: 'starlightmints', name: 'Starlight Mints', color: '#D7263D' },
+  { id: 'werthers', name: "Werther's Original", color: '#C8932E' },
 ];
 
 /** How many votes each kid gets. They may put several, or all, on one candy. */
